@@ -4,9 +4,12 @@ using UnityEngine;
 
 public class PlayerManager : MonoBehaviour 
 {
-    private int platformMask = 1 << 9;
+    private const int PLATFORM_MASK = 1 << 9;
+    private const int ENEMY_MASK = 1 << 11;
 
-	public float speed;
+    private const float HALF_PLAYER_SIZE = .5f;
+
+    public float speed;
     public float jumpHeight = 8;
 
     public float fallMultiplier = 2.5f;
@@ -30,7 +33,9 @@ public class PlayerManager : MonoBehaviour
 	Rigidbody2D rb;
     GameObject sword;
     float swordOffset;
-    BoxCollider2D swordCollider;
+
+    public float swordAttackSpeed = .3f;
+    private float swordAttackTimer;
 
 	void Start () 
 	{
@@ -38,7 +43,8 @@ public class PlayerManager : MonoBehaviour
 
         sword = transform.GetChild(0).gameObject;
         swordOffset = sword.transform.localPosition.x;
-        swordCollider = sword.GetComponent<BoxCollider2D>(); 
+
+        swordAttackTimer = Time.time;
 	}
 	
 	void Update () 
@@ -89,8 +95,8 @@ public class PlayerManager : MonoBehaviour
         Vector2 leftRayPosition = playerPosition - new Vector2(.5f, 0);
         Vector2 rightRayPosition = playerPosition + new Vector2(.5f, 0);
 
-        RaycastHit2D leftRay = Physics2D.Raycast(leftRayPosition, Vector2.down, Mathf.Infinity, platformMask);
-        RaycastHit2D rightRay = Physics2D.Raycast(rightRayPosition, Vector2.down, Mathf.Infinity, platformMask);
+        RaycastHit2D leftRay = Physics2D.Raycast(leftRayPosition, Vector2.down, Mathf.Infinity, PLATFORM_MASK);
+        RaycastHit2D rightRay = Physics2D.Raycast(rightRayPosition, Vector2.down, Mathf.Infinity, PLATFORM_MASK);
 
         bool floorLeft = leftRay.distance <= floorDistance;
         bool floorRight = rightRay.distance <= floorDistance;
@@ -99,41 +105,48 @@ public class PlayerManager : MonoBehaviour
     }
 
     // check for a wall on the left or right
-    private bool wallCheck(bool left, float castDistance, float trueDistance, int mask)
+    private RaycastHit2D[] checkForObject(bool left, float castDistance, int mask)
     {
         Vector2 direction = getDirection(left);
 
         float playerX = transform.position.x;
         float playerY = transform.position.y;
-        float offset = 0.5f;
+        float offset = HALF_PLAYER_SIZE;
+        if (left)
+            offset *= -1;
 
-        Vector2 playerTop = new Vector2(playerX + offset, playerY + offset);
-        Vector2 playerBottom = new Vector2(playerX + offset, playerY - offset);
+        Vector2 playerTop = new Vector2(playerX + offset, playerY + HALF_PLAYER_SIZE);
+        Vector2 playerBottom = new Vector2(playerX + offset, playerY - HALF_PLAYER_SIZE);
 
         RaycastHit2D topRay = Physics2D.Raycast(playerTop, direction, castDistance, mask);
         RaycastHit2D bottomRay = Physics2D.Raycast(playerBottom, direction, castDistance, mask);
 
-        bool clippingWallTop = topRay.distance <= trueDistance && topRay.transform != null;
-        bool clippingWallBottom = bottomRay.distance <= trueDistance && bottomRay.transform != null;
+        return new RaycastHit2D[] { topRay, bottomRay };
+    }
+    
+    // a gameobject if either of the raycasts hit one
+    private GameObject objectCheck(bool left, float castDistance, int mask)
+    {
+        RaycastHit2D[] casts = checkForObject(left, castDistance, mask);
 
-        return clippingWallTop || clippingWallBottom;
+        foreach (RaycastHit2D cast in casts)
+            if (cast.transform != null)
+                return cast.transform.gameObject;
+
+        return null;
     }
 
     private void attackController()
     {
-        if(Input.GetKeyDown(KeyCode.E) && wallCheck(facingLeft, 1.25f, 1.24f, 1 << 11))
+        if(Input.GetKeyDown(KeyCode.E) && Time.time > swordAttackTimer)
         {
-            Vector2 direction = getDirection(facingLeft);
+            GameObject enemy = objectCheck(facingLeft, 1.25f, ENEMY_MASK);
 
-            Vector2 playerPos = new Vector2(transform.position.x, transform.position.y);
-            RaycastHit2D ray = Physics2D.Raycast(playerPos + direction, direction, 1.25f, 1 << 11);
-
-            if (ray.transform != null)
+            if(enemy != null)
             {
-                if (ray.transform.gameObject.CompareTag("Enemy"))
-                {
-                    ray.transform.gameObject.GetComponent<EnemyManager>().takeDamage(5, transform.position);
-                }
+                EnemyManager enemyMan = enemy.GetComponent<EnemyManager>();
+                enemyMan.takeDamage(5, transform.position);
+                swordAttackTimer = Time.time + swordAttackSpeed;
             }
         }
     }
