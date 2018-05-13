@@ -33,12 +33,20 @@ public class PlayerManager : MonoBehaviour
 	Rigidbody2D rb;
     GameObject sword;
     float swordOffset;
+    private Weapon weapon;
+
+    public List<Item> items { get; protected set; }
 
     public float swordAttackSpeed = .3f;
     private float swordAttackTimer;
 
 	void Start () 
 	{
+        weapon = new Weapon(5, .3f, new Vector2(2, 3));
+
+        items = new List<Item>();
+        items.Add(weapon);
+
 		rb = GetComponent<Rigidbody2D>();
 
         sword = transform.GetChild(0).gameObject;
@@ -145,7 +153,7 @@ public class PlayerManager : MonoBehaviour
             if(enemy != null)
             {
                 EnemyManager enemyMan = enemy.GetComponent<EnemyManager>();
-                enemyMan.takeDamage(5, transform.position);
+                enemyMan.takeDamage(weapon, transform.position);
                 swordAttackTimer = Time.time + swordAttackSpeed;
             }
         }

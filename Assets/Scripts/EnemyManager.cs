@@ -18,7 +18,6 @@ public class EnemyManager : MonoBehaviour
 
 
     Rigidbody2D rb;
-    public Vector2 knockbackForce = new Vector2(2, 3);
 
     SpriteRenderer sr;
 
@@ -30,23 +29,22 @@ public class EnemyManager : MonoBehaviour
 	
 	void Update () 
 	{
-		
+        
 	}
 
-    public void takeDamage(int damage, Vector2 sourcePosition)
+    public void takeDamage(Weapon weapon, Vector2 sourcePosition)
     {
-        health -= damage;
+        health -= weapon.damage;
         StartCoroutine(damageEffect());
-        knockback(sourcePosition);
+        knockback(sourcePosition, weapon.knockback);
     }
 
-    private void knockback(Vector2 position)
+    private void knockback(Vector2 position, Vector2 knockback)
     {
-        //Vector2 knockbackForce = new Vector2(2, 3);
         if (position.x > transform.position.x)
-            knockbackForce.x *= -1;
+            knockback.x *= -1;
 
-        rb.velocity = knockbackForce;
+        rb.velocity = knockback;
     }
 
     private IEnumerator damageEffect()
