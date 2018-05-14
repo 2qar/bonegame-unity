@@ -3,13 +3,13 @@ using System.Collections;
 
 [System.Serializable]
 [CreateAssetMenu(fileName = "Weapon", menuName = "Item/Weapon", order = 0)]
-public abstract class Weapon : Item
+public class Weapon : Item
 {
     public int damage { get; protected set; }
     public float attackSpeed { get; protected set; }
     public Vector2 knockback { get; protected set; }
     private Sprite sprite;
-    private Animator colliderAnimator;
+    private Animator weaponAnimator;
 
     public Weapon(int damage, float attackSpeed, Vector2 knockback)
     {
@@ -17,12 +17,6 @@ public abstract class Weapon : Item
         this.attackSpeed = attackSpeed;
         this.knockback = knockback;
     }
-
-    public abstract void lightAttack();
-
-    public abstract void heavyAttack();
-
-    public abstract void specialAttack();
 
     public override string ToString()
     {
@@ -38,20 +32,4 @@ public class Sword : Weapon
     {
         // insert unique collider animation assignment here
     }
-
-    public override void lightAttack()
-    {
-        
-    }
-
-    public override void heavyAttack()
-    {
-        
-    }
-
-    public override void specialAttack()
-    {
-        
-    }
-
 }
