@@ -21,15 +21,27 @@ public class EnemyManager : MonoBehaviour
 
     SpriteRenderer sr;
 
+    Transform rayBox;
+
 	void Start () 
 	{
+        rayBox = transform.GetChild(0);
+
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
 	}
 	
 	void Update () 
 	{
-        
+        Vector2 position = transform.position;
+        position.x += .5f;
+        position.y += .5f;
+
+        Vector2 size = new Vector2(2, 2);
+        RaycastHit2D ray = Physics2D.BoxCast(position, size, 0, Vector2.right, 2.5f, 1 << 8);
+
+        if(ray.point != new Vector2(0, 0))
+            rayBox.position = ray.point;
 	}
 
     public void takeDamage(Weapon weapon, Vector2 sourcePosition)

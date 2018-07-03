@@ -6,6 +6,7 @@ public class PlayerManager : MonoBehaviour
 {
     private const int PLATFORM_MASK = 1 << 9;
     private const int ENEMY_MASK = 1 << 11;
+    private float halfSize = 1f;
 
     private const float HALF_PLAYER_SIZE = .5f;
 
@@ -21,17 +22,17 @@ public class PlayerManager : MonoBehaviour
         get { return _facingLeft; }
         set
         {
-            if (value)
-                sword.transform.localPosition = new Vector2(-swordOffset, 0);
-            else
-                sword.transform.localPosition = new Vector2(swordOffset, 0);
+            //if (value)
+                //sword.transform.localPosition = new Vector2(-swordOffset, 0);
+            //else
+                //sword.transform.localPosition = new Vector2(swordOffset, 0);
 
             _facingLeft = value;
         }
     }
 
 	Rigidbody2D rb;
-    GameObject sword;
+    //GameObject sword;
     float swordOffset;
     private Weapon weapon;
 
@@ -49,8 +50,8 @@ public class PlayerManager : MonoBehaviour
 
 		rb = GetComponent<Rigidbody2D>();
 
-        sword = transform.GetChild(0).gameObject;
-        swordOffset = sword.transform.localPosition.x;
+        //sword = transform.GetChild(0).gameObject;
+        //swordOffset = sword.transform.localPosition.x;
 
         swordAttackTimer = Time.time;
 	}
@@ -97,7 +98,7 @@ public class PlayerManager : MonoBehaviour
 
     private bool checkGrounded()
     {
-        const float floorDistance = .52f;
+        float floorDistance = halfSize / 2 + .03f;
 
         Vector2 playerPosition = transform.position;
         Vector2 leftRayPosition = playerPosition - new Vector2(.5f, 0);
@@ -129,7 +130,7 @@ public class PlayerManager : MonoBehaviour
         RaycastHit2D topRay = Physics2D.Raycast(playerTop, direction, castDistance, mask);
         RaycastHit2D bottomRay = Physics2D.Raycast(playerBottom, direction, castDistance, mask);
 
-        return new RaycastHit2D[] { topRay, bottomRay };
+        return new RaycastHit2D[] { topRay, bottomRay }; 
     }
     
     // a gameobject if either of the raycasts hit one
@@ -167,4 +168,58 @@ public class PlayerManager : MonoBehaviour
             return Vector2.right;
     }
 
-}
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+            explode(collision.gameObject.transform.position);
+    }
+
+    private void explode(Vector2 position)
+    {
+        try
+        {
+            // store the bones
+            GameObject[] bones = new GameObject[6];
+
+            // get the head
+            bones[0] = transform.GetChild(0).gameObject;
+            // get the spine
+            bones[1] = bones[0].transform.GetChild(0).gameObject;
+
+            // get all of the limbs attached to the spine
+            for (int index = 0; index < 4; index++)
+                bones[index + 2] = bones[1].transform.GetChild(index).gameObject;
+
+            for (int index = 1; index < bones.Length; index++)
+            {
+                Rigidbody2D rb = bones[index].AddComponent<Rigidbody2D>();
+                //BoxCollider2D collider = bone.AddComponent<BoxCollider2D>();
+                rb.bodyType = RigidbodyType2D.Dynamic;
+
+                Vector2 knockback = new Vector2(2, 3);
+                if (position.x > transform.position.x)
+                    knockback.x *= -1;
+
+                rb.velocity = knockback;
+                rb.angularVelocity = Random.Range(-360, 360);
+
+                bones[index].transform.parent = null;
+                bones[index].gameObject.layer = LayerMask.NameToLayer("Bones");
+            }
+
+            setMovementData(Resources.Load<PlayerMovementData>("PlayerMovement/HeadMovement"));
+        }
+        catch { print("no booones"); }
+    }
+
+    private void setMovementData(PlayerMovementData data)
+    {
+        print(data); 
+        speed = data.speed;
+        jumpHeight = data.jumpHeight;
+        fallMultiplier = data.fallMultiplier;
+        lowJumpMultiplier = data.lowJumpMultiplier;
+        halfSize = data.halfSize;
+    }
+
+}       
